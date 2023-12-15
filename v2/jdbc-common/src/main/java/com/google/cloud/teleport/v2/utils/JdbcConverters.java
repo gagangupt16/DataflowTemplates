@@ -16,6 +16,7 @@
 package com.google.cloud.teleport.v2.utils;
 
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.cloud.spanner.Mutation;
 import java.sql.Array;
 import java.sql.Clob;
 import java.sql.ResultSet;
@@ -40,6 +41,75 @@ public class JdbcConverters {
   /** Factory method for {@link ResultSetToTableRow}. */
   public static JdbcIO.RowMapper<TableRow> getResultSetToTableRow(boolean useColumnAlias) {
     return new ResultSetToTableRow(useColumnAlias);
+  }
+
+  /** Factory method for {@link ResultSetToMutation}. */
+  public static JdbcIO.RowMapper<Mutation> getResultSetToMutation(String table) {
+    return new ResultSetToMutation(table);
+  }
+
+  /**
+   * {@link JdbcIO.RowMapper} implementation to convert Jdbc ResultSet rows to Cloud Spanner
+   * Mutation.
+   */
+  private static class ResultSetToMutation implements JdbcIO.RowMapper<Mutation> {
+    private String table;
+
+    public ResultSetToMutation(String table) {
+      this.table = table;
+    }
+
+    @Override
+    public Mutation mapRow(ResultSet resultSet) throws Exception {
+      ResultSetMetaData metaData = resultSet.getMetaData();
+      Mutation.WriteBuilder mutation = Mutation.newInsertOrUpdateBuilder(table);
+      for (int i = 1; i <= metaData.getColumnCount(); i++) {
+        Object columnVal = resultSet.getObject(i);
+        if (columnVal == null) {
+          continue;
+        }
+        String columnName = metaData.getColumnName(i);
+        int columnType = metaData.getColumnType(i);
+        switch (columnType) {
+          case java.sql.Types.VARCHAR:
+          case java.sql.Types.CHAR:
+          case java.sql.Types.LONGVARCHAR:
+            mutation.set(columnName).to(String.valueOf(columnVal));
+            break;
+          case java.sql.Types.BIGINT:
+          case java.sql.Types.INTEGER:
+          case java.sql.Types.SMALLINT:
+          case java.sql.Types.TINYINT:
+            mutation.set(columnName).to(Long.valueOf(columnVal.toString()));
+            break;
+          case java.sql.Types.BOOLEAN:
+          case java.sql.Types.BIT:
+            mutation.set(columnName).to(resultSet.getBoolean(i));
+            break;
+          case java.sql.Types.DOUBLE:
+          case java.sql.Types.FLOAT:
+          case java.sql.Types.REAL:
+            mutation.set(columnName).to(((Number) columnVal).doubleValue());
+            break;
+          case java.sql.Types.TIMESTAMP:
+          case java.sql.Types.TIME:
+            com.google.cloud.Timestamp ts =
+                com.google.cloud.Timestamp.of(resultSet.getTimestamp(i));
+            mutation.set(columnName).to(ts);
+            break;
+          default:
+            throw new IllegalArgumentException(
+                "Not supported: "
+                    + columnName
+                    + ","
+                    + columnType
+                    + ":"
+                    + metaData.getColumnTypeName(i));
+        }
+      }
+
+      return mutation.build();
+    }
   }
 
   /**
