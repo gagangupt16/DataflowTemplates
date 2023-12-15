@@ -48,7 +48,7 @@ import org.apache.beam.sdk.values.PCollection;
     displayName = "JDBC to Spanner",
     description = {
       "The JDBC to Spanner template is a batch pipeline that copies data from a relational"
-          + " database table into an existing Spanner table. This pipeline uses JDBC to connect to"
+          + " database into an existing Spanner database. This pipeline uses JDBC to connect to"
           + " the relational database. You can use this template to copy data from any relational"
           + " database with available JDBC drivers into Spanner.",
       "For an extra layer of protection, you can also pass in a Cloud KMS key along with a"
@@ -66,8 +66,8 @@ import org.apache.beam.sdk.values.PCollection;
     preview = true,
     requirements = {
       "The JDBC drivers for the relational database must be available.",
-      "The Spanner table must exist before pipeline execution.",
-      "The Spanner table must have a compatible schema.",
+      "The Spanner tables must exist before pipeline execution.",
+      "The Spanner tables must have a compatible schema.",
       "The relational database must be accessible from the subnet where Dataflow runs."
     })
 public class JdbcToSpanner {

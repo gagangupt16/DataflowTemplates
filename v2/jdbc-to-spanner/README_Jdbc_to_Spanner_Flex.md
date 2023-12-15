@@ -2,9 +2,9 @@
 JDBC to Spanner template
 ---
 The JDBC to Spanner template is a batch pipeline that copies data from a
-relational database table into an existing Spanner table. This pipeline uses JDBC
-to connect to the relational database. You can use this template to copy data
-from any relational database with available JDBC drivers into Spanner.
+relational database into an existing Spanner database. This pipeline uses JDBC to
+connect to the relational database. You can use this template to copy data from
+any relational database with available JDBC drivers into Spanner.
 
 For an extra layer of protection, you can also pass in a Cloud KMS key along with
 a Base64-encoded username, password, and connection string parameters encrypted
