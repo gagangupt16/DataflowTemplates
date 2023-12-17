@@ -42,6 +42,7 @@ on [Metadata Annotations](https://github.com/GoogleCloudPlatform/DataflowTemplat
 * **tables** (Comma-separated names of the tables in the source database.): Tables to read from using partitions.
 * **numPartitions** (The number of partitions.): The number of partitions. This, along with the lower and upper bound, form partitions strides for generated WHERE clause expressions used to split the partition column evenly. When the input is less than 1, the number is set to 1.
 * **spannerHost** (Cloud Spanner Endpoint to call): The Cloud Spanner endpoint to call in the template. (Example: https://batch-spanner.googleapis.com). Defaults to: https://batch-spanner.googleapis.com.
+* **ignoreColumns** (Source database columns to ignore): A comma separated list of (table:column1;column2) to exclude from writing to Spanner (Example: table1:column1;column2,table2:column1).
 * **disabledAlgorithms** (Disabled algorithms to override jdk.tls.disabledAlgorithms): Comma-separated algorithms to disable. If this value is set to `none` then no algorithm is disabled. Use with care, because the algorithms that are disabled by default are known to have either vulnerabilities or performance issues. (Example: SSLv3, RC4).
 * **extraFilesToStage** (Extra files to stage in the workers): Comma separated Cloud Storage paths or Secret Manager secrets for files to stage in the worker. These files will be saved under the `/extra_files` directory in each worker (Example: gs://your-bucket/file.txt,projects/project-id/secrets/secret-id/versions/version-id).
 
@@ -142,6 +143,7 @@ export PARTITION_COLUMN=<partitionColumn>
 export TABLES=<tables>
 export NUM_PARTITIONS=<numPartitions>
 export SPANNER_HOST=https://batch-spanner.googleapis.com
+export IGNORE_COLUMNS=<ignoreColumns>
 export DISABLED_ALGORITHMS=<disabledAlgorithms>
 export EXTRA_FILES_TO_STAGE=<extraFilesToStage>
 
@@ -162,6 +164,7 @@ gcloud dataflow flex-template run "jdbc-to-spanner-flex-job" \
   --parameters "databaseId=$DATABASE_ID" \
   --parameters "projectId=$PROJECT_ID" \
   --parameters "spannerHost=$SPANNER_HOST" \
+  --parameters "ignoreColumns=$IGNORE_COLUMNS" \
   --parameters "disabledAlgorithms=$DISABLED_ALGORITHMS" \
   --parameters "extraFilesToStage=$EXTRA_FILES_TO_STAGE"
 ```
@@ -197,6 +200,7 @@ export PARTITION_COLUMN=<partitionColumn>
 export TABLES=<tables>
 export NUM_PARTITIONS=<numPartitions>
 export SPANNER_HOST=https://batch-spanner.googleapis.com
+export IGNORE_COLUMNS=<ignoreColumns>
 export DISABLED_ALGORITHMS=<disabledAlgorithms>
 export EXTRA_FILES_TO_STAGE=<extraFilesToStage>
 
@@ -207,7 +211,7 @@ mvn clean package -PtemplatesRun \
 -Dregion="$REGION" \
 -DjobName="jdbc-to-spanner-flex-job" \
 -DtemplateName="Jdbc_to_Spanner_Flex" \
--Dparameters="driverJars=$DRIVER_JARS,driverClassName=$DRIVER_CLASS_NAME,connectionURL=$CONNECTION_URL,connectionProperties=$CONNECTION_PROPERTIES,username=$USERNAME,password=$PASSWORD,partitionColumn=$PARTITION_COLUMN,tables=$TABLES,numPartitions=$NUM_PARTITIONS,instanceId=$INSTANCE_ID,databaseId=$DATABASE_ID,projectId=$PROJECT_ID,spannerHost=$SPANNER_HOST,disabledAlgorithms=$DISABLED_ALGORITHMS,extraFilesToStage=$EXTRA_FILES_TO_STAGE" \
+-Dparameters="driverJars=$DRIVER_JARS,driverClassName=$DRIVER_CLASS_NAME,connectionURL=$CONNECTION_URL,connectionProperties=$CONNECTION_PROPERTIES,username=$USERNAME,password=$PASSWORD,partitionColumn=$PARTITION_COLUMN,tables=$TABLES,numPartitions=$NUM_PARTITIONS,instanceId=$INSTANCE_ID,databaseId=$DATABASE_ID,projectId=$PROJECT_ID,spannerHost=$SPANNER_HOST,ignoreColumns=$IGNORE_COLUMNS,disabledAlgorithms=$DISABLED_ALGORITHMS,extraFilesToStage=$EXTRA_FILES_TO_STAGE" \
 -pl v2/jdbc-to-spanner \
 -am
 ```
@@ -251,6 +255,7 @@ resource "google_dataflow_flex_template_job" "jdbc_to_spanner_flex" {
     # tables = "<tables>"
     # numPartitions = "<numPartitions>"
     # spannerHost = "https://batch-spanner.googleapis.com"
+    # ignoreColumns = "table1:column1;column2,table2:column1"
     # disabledAlgorithms = "SSLv3, RC4"
     # extraFilesToStage = "gs://your-bucket/file.txt,projects/project-id/secrets/secret-id/versions/version-id"
   }

@@ -28,7 +28,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.apache.beam.sdk.io.jdbc.JdbcIO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +46,9 @@ public class JdbcConverters {
   }
 
   /** Factory method for {@link ResultSetToMutation}. */
-  public static JdbcIO.RowMapper<Mutation> getResultSetToMutation(String table) {
-    return new ResultSetToMutation(table);
+  public static JdbcIO.RowMapper<Mutation> getResultSetToMutation(
+      String table, Set<String> columnsToIgnore) {
+    return new ResultSetToMutation(table, columnsToIgnore);
   }
 
   /**
@@ -54,9 +57,20 @@ public class JdbcConverters {
    */
   private static class ResultSetToMutation implements JdbcIO.RowMapper<Mutation> {
     private String table;
+    private Set<String> columnsToIgnore;
 
-    public ResultSetToMutation(String table) {
-      this.table = table;
+    public ResultSetToMutation(String table, Set<String> columnsToIgnore) {
+      this.table = removeShardId(table);
+      this.columnsToIgnore = columnsToIgnore == null ? Collections.emptySet() : columnsToIgnore;
+    }
+
+    private static String removeShardId(String table) {
+      // Hardcode for deposit_transaction_queue table
+      final String depositTable = "deposit_transaction_queue";
+      if (table.startsWith(depositTable)) {
+        return depositTable;
+      }
+      return table;
     }
 
     @Override
@@ -69,6 +83,9 @@ public class JdbcConverters {
           continue;
         }
         String columnName = metaData.getColumnName(i);
+        if (columnsToIgnore.contains(columnName)) {
+          continue;
+        }
         int columnType = metaData.getColumnType(i);
         switch (columnType) {
           case java.sql.Types.VARCHAR:

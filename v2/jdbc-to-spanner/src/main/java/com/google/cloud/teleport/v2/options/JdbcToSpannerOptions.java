@@ -173,4 +173,15 @@ public interface JdbcToSpannerOptions extends CommonTemplateOptions {
   String getSpannerHost();
 
   void setSpannerHost(String value);
+
+  @TemplateParameter.Text(
+      order = 14,
+      optional = true,
+      description = "Source database columns to ignore",
+      helpText =
+          "A comma separated list of (table:column1;column2) to exclude from writing to Spanner",
+      example = "table1:column1;column2,table2:column1")
+  String getIgnoreColumns();
+
+  void setIgnoreColumns(String value);
 }

@@ -25,7 +25,12 @@ import com.google.cloud.teleport.v2.options.JdbcToSpannerOptions;
 import com.google.cloud.teleport.v2.utils.JdbcConverters;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.spanner.SpannerIO;
@@ -36,7 +41,8 @@ import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.values.PCollection;
 
 /**
- * A template that copies data from a relational database using JDBC to an existing Spanner table.
+ * A template that copies data from a relational database using JDBC to an existing Spanner
+ * database.
  *
  * <p>Check out <a
  * href="https://github.com/GoogleCloudPlatform/DataflowTemplates/blob/main/v2/jdbc-to-googlecloud/README_Jdbc_to_Spanner_Flex.md">README</a>
@@ -98,9 +104,11 @@ public class JdbcToSpanner {
   @VisibleForTesting
   static PipelineResult run(JdbcToSpannerOptions options) {
     Pipeline pipeline = Pipeline.create(options);
+    Map<String, Set<String>> columnsToIgnore = getColumnsToIgnore(options);
     for (String table : getTables(options)) {
       PCollection<Mutation> rows =
-          pipeline.apply("ReadPartitions_" + table, getJdbcReader(table, options));
+          pipeline.apply(
+              "ReadPartitions_" + table, getJdbcReader(table, columnsToIgnore.get(table), options));
       rows.apply("Write_" + table, getSpannerWrite(options));
     }
     return pipeline.run();
@@ -110,13 +118,32 @@ public class JdbcToSpanner {
     return Arrays.asList(options.getTables().split(","));
   }
 
+  private static Map<String, Set<String>> getColumnsToIgnore(JdbcToSpannerOptions options) {
+    String ignoreStr = options.getIgnoreColumns();
+    if (ignoreStr == null || ignoreStr.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<String, Set<String>> ignore = new HashMap<>();
+    for (String tableColumns : ignoreStr.split(",")) {
+      int tableNameIndex = tableColumns.indexOf(':');
+      if (tableNameIndex == -1) {
+        continue;
+      }
+      String table = tableColumns.substring(0, tableNameIndex);
+      String columnStr = tableColumns.substring(tableNameIndex + 1);
+      Set<String> columns = new HashSet<>(Arrays.asList(columnStr.split(";")));
+      ignore.put(table, columns);
+    }
+    return ignore;
+  }
+
   private static JdbcIO.ReadWithPartitions<Mutation, Long> getJdbcReader(
-      String table, JdbcToSpannerOptions options) {
+      String table, Set<String> columnsToIgnore, JdbcToSpannerOptions options) {
     return JdbcIO.<Mutation>readWithPartitions()
         .withDataSourceConfiguration(getDataSourceConfiguration(options))
         .withTable(table)
         .withPartitionColumn(options.getPartitionColumn())
-        .withRowMapper(JdbcConverters.getResultSetToMutation(table))
+        .withRowMapper(JdbcConverters.getResultSetToMutation(table, columnsToIgnore))
         .withNumPartitions(options.getNumPartitions());
   }
 
