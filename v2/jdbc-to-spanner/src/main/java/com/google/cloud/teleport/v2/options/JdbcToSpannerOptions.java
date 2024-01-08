@@ -58,7 +58,9 @@ public interface JdbcToSpannerOptions extends CommonTemplateOptions {
               + " be passed in as a string that's Base64-encoded and then encrypted with a Cloud"
               + " KMS key. Note the difference between an Oracle non-RAC database connection string"
               + " (`jdbc:oracle:thin:@some-host:<port>:<sid>`) and an Oracle RAC database"
-              + " connection string (`jdbc:oracle:thin:@//some-host[:<port>]/<service_name>`).",
+              + " connection string (`jdbc:oracle:thin:@//some-host[:<port>]/<service_name>`)."
+              + " If you want to pass multiple properties here, append "
+              + " `?propertyName1=propertyValue1&propertyName2=propertyValue2`... and so on."
       example = "jdbc:mysql://some-host:3306/sampledb")
   String getConnectionURL();
 
